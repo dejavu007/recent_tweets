@@ -2,9 +2,12 @@
 
 function recent_tweets_uninstall() {
   // Remove variables.
-  variable_del('');
-  variable_del('');
-  variable_del('');
-  variable_del('');
-  variable_del('');
+  variable_del('recent_tweets_username');
+  variable_del('recent_tweets_consumer_key');
+  variable_del('recent_tweets_consumer_secret');
+  variable_del('recent_tweets_access_token');
+  variable_del('recent_tweets_access_token_secret');
+  variable_del('recent_tweets_count');
+  variable_del('recent_tweets_delay_time');
+  variable_del('recent_tweets_fade_time');
 }
