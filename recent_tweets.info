@@ -1,0 +1,6 @@
+name = Recent Tweets
+description = Pulls the recent tweets and display it rotationally.
+package = Other
+core = 7.x
+
+dependencies[] = variable

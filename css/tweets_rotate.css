@@ -1,0 +1,18 @@
+.twitter-icon {
+  float: left;
+}
+.recent-tweets-content {
+  position: relative;
+  overflow: hidden;
+}
+.tweet-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.tweet-text {
+  margin: 0 0 16px 0;
+}
+.tweet-date {
+  margin: 0;
+}

@@ -1,0 +1,10 @@
+<?php
+
+function recent_tweets_uninstall() {
+  // Remove variables.
+  variable_del('');
+  variable_del('');
+  variable_del('');
+  variable_del('');
+  variable_del('');
+}

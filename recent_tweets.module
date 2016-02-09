@@ -1,0 +1,194 @@
+<?php
+
+/**
+ * @file
+ * Pulls and stores the most recent tweet from a given account.
+ */
+
+// module_load_include('php', 'recent_tweets', 'vendor/twitter-php/src/OAuth');
+// module_load_include('php', 'recent_tweets', 'vendor/twitter-php/src/twitter.class');
+
+/**
+ * Implements hook_block_info().
+ */
+function recent_tweets_block_info() {
+  return array(
+    'recent_tweets' => array(
+      'info' => t('Recent Tweets'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function recent_tweets_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'recent_tweets':
+      $block['subject'] = t('Recent Tweets');
+      $block['content'] = array(
+        '#markup' => recent_tweets(),
+        '#attached' => array(
+          'css' => array(
+            drupal_get_path('module', 'recent_tweets') . '/css/tweets_rotate.css',
+          ),
+          'js' => array(
+            drupal_get_path('module', 'recent_tweets') . '/js/tweets_rotate.js',
+          ),
+        ),
+      );
+      break;
+  }
+
+  return $block;
+}
+
+
+
+/**
+ * Fetch recent tweets and populate it.
+ */
+function recent_tweets() {
+  module_load_include('php', 'recent_tweets', 'vendor/twitter-php/src/OAuth');
+  module_load_include('php', 'recent_tweets', 'vendor/twitter-php/src/twitter.class');
+
+  $output = '';
+
+  // Number of tweets to pull
+  $tweets_count = variable_get_value('recent_tweets_count');
+
+  $creds = array(
+    'consumer_key' => NULL,
+    'consumer_secret' => NULL,
+    'access_token' => NULL,
+    'access_token_secret' => NULL,
+  );
+
+  foreach (array_keys($creds) as $key) {
+    $creds[$key] = variable_get_value('recent_tweets_' . $key);
+
+    if (empty($creds[$key])) {
+      watchdog(
+        'recent_tweets',
+        t('Twitter API credentials have not been set.'),
+        array(),
+        WATCHDOG_WARNING
+      );
+
+      return;
+    }
+  }
+
+  try {
+    $client = new Twitter(
+      $creds['consumer_key'],
+      $creds['consumer_secret'],
+      $creds['access_token'],
+      $creds['access_token_secret']
+    );
+
+    $tweets = $client->load(Twitter::ME, $tweets_count);
+  }
+  catch (TwitterException $e) {
+    watchdog(
+      'recent_tweets',
+      t('Tweets retrieval failed: @message'),
+      array(
+        '@message' => $e->getMessage(),
+      ),
+      WATCHDOG_ERROR
+    );
+
+    return;
+  }
+
+  if (empty($tweets)) {
+    return;
+  }
+
+  // Defaults
+  global $base_url;
+  $path = drupal_get_path('module', 'recent_tweets');
+  $user = variable_get_value('recent_tweets_username');
+  $twt_user = strtolower($user);
+
+  // Pass values to the script
+  drupal_add_js(array('recentTweets' => array('delayTime' => variable_get_value('recent_tweets_delay_time'), 'fadeTime' => variable_get_value('recent_tweets_fade_time'))), 'setting');
+
+  // Recent tweets header
+  $output = '<div class="recent-tweets">';
+  $output .= '<div id="recent-tweets-header">
+              <a class="twitter-icon" href="https://twitter.com/" target="_blank"><img src="' . $base_url . '/' . $path . '/images/twitter-bird-light.png" width="34" alt="twitter bird" /></a>
+              <h3 style="padding:0 0 0 45px; margin-top: 0;">
+                <a href="https://twitter.com/' . $twt_user . '" target="_blank">' . $twt_user . '</a>
+              </h3>
+             </div>
+             <div class="recent-tweets-content">';
+  foreach ($tweets as $twt_key => $tweet) {
+    $twt_date = format_date(strtotime($tweet->created_at), 'date_only');
+    $twt_text = Twitter::clickable($tweet);
+    $twt_count = $twt_key+1;
+    $output .= '<div id="tweet-' . $twt_count . '" class="tweet-item">
+                  <div class="tweet-content">
+                    <p class="tweet-text">' . $twt_text . '</p>
+                    <p class="tweet-date">' . $twt_date . '</p>
+                  </div>
+                </div>';
+    // drupal_set_message('<pre>'.print_r($tweet, TRUE).'</pre>');
+  }
+
+  $output .= '</div></div>';
+  return $output;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function recent_tweets_menu() {
+  return array(
+    'admin/config/services/twitter' => array(
+      'title' => t('Twitter credentials'),
+      'type' => MENU_NORMAL_ITEM,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('variable_module_form', 'recent_tweets'),
+      'access arguments' => array('access administration pages'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_variable_info().
+ */
+function recent_tweets_variable_info($options) {
+  return array(
+    'recent_tweets_username' => array(
+      'title' => t('Username', array(), $options),
+    ),
+    'recent_tweets_consumer_key' => array(
+      'title' => t('API key', array(), $options),
+    ),
+    'recent_tweets_consumer_secret' => array(
+      'title' => t('API secret', array(), $options),
+    ),
+    'recent_tweets_access_token' => array(
+      'title' => t('Access token', array(), $options),
+    ),
+    'recent_tweets_access_token_secret' => array(
+      'title' => t('Access token secret', array(), $options),
+    ),
+    'recent_tweets_count' => array(
+      'title' => t('Number of tweets', array(), $options),
+      'default' => 5,
+    ),
+    'recent_tweets_delay_time' => array(
+      'title' => t('Delay time', array(), $options),
+      'default' => 7500,
+    ),
+    'recent_tweets_fade_time' => array(
+      'title' => t('Fade Time', array(), $options),
+      'default' => 500,
+    ),
+  );
+}
