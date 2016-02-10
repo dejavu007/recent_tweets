@@ -2,8 +2,8 @@
   Drupal.behaviors.tweetsRotate = {
     attach: function (context, settings) {
       function rotatetweets() {
-				var tweetDelayTime = 5000; // time duration each tweet stays visible.
-				var tweetFadeTime = 500;	// time duration the transition of tweets take place.
+        var tweetDelayTime = Drupal.settings.recentTweets.delayTime; // time duration each tweet stays visible.
+				var tweetFadeTime = Drupal.settings.recentTweets.fadeTime;	// time duration the transition of tweets take place.
 				
 				var startTweet = 1;
 				var animateTweet = startTweet;
